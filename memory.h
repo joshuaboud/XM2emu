@@ -11,13 +11,40 @@
 #define DEVMEM 0x0010
 #define VECTORBASE 0xFFC0 /* Base address of vectors */
 
-#define PSW 0xFFFC
+#define PSW_ADDR 0xFFFC
 #define RESET_PC 0xFFFE
 
 union mem_ex{
   unsigned char byte_mem[BYTEMAXMEM];
   unsigned short word_mem[WORDMAXMEM];
 };
+
+struct psw_bf{
+  int C : 1;
+  int Z : 1;
+  int N : 1;
+  int SLP : 1;
+  int V : 1;
+  int CURR_PRIO : 3;
+  int res : 5;
+  int PREV_PRIO : 3;
+};
+
+union psw_ex{
+  unsigned short word;
+  struct psw_bf psw;
+};
+
+extern union psw_ex * PSW;
+
+enum { ILL_INST = 8, INV_ADDR, PRIO_FAULT };
+
+struct vector{
+  union psw_ex PSW;
+  unsigned short ADDR;
+};
+
+extern struct vector *vectorTbl;
 
 extern union mem_ex memory;
 

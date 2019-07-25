@@ -72,9 +72,9 @@ void debuggerMenu(){
 void printMenu(){
   clear();
   printw("XM2 Emulator 0.1 Josh Boudreau 2019\n");
-  printw("PC = %04x\n",regFile[PC]);
-  printw("# of clock cycles: %d",clock);
-  (BRKPT != NEVER)? printw("Current breakpoint: %04x\n",BRKPT) : addch('\n');
+  printw("PC = %04X\n",regFile[PC]);
+  printw("# of clock cycles: %d\n",clock);
+  (BRKPT != NEVER)? printw("Current breakpoint: %04X\n",BRKPT) : addch('\n');
   printw("C - Change memory location\n"
          "B - Set Breakpoint\n"
          "L - Load XME file\n"
@@ -107,7 +107,7 @@ void changeMemory(){
       error(OOB);
       return;
     }
-    printw("Enter byte to store at %04x (hex): ", loc);
+    printw("Enter byte to store at %04X (hex): ", loc);
     if(scanw("%x ",&val) == EOF){
       error(INPUT);
       return;
@@ -127,7 +127,7 @@ void changeMemory(){
       error(OOB);
       return;
     }
-    printw("Enter word to store at %04x (hex): ", loc);
+    printw("Enter word to store at %04X (hex): ", loc);
     if(scanw("%x ",&val) == EOF){
       error(INPUT);
       return;
@@ -180,7 +180,7 @@ void load(){
 void printRegFile(){
   clear();
   for(int i = 0; i < NUM_REG; i++){
-    printw("\nR%d: %04x", i, (int)regFile[i]);
+    printw("\nR%d: %04X", i, (int)regFile[i]);
   }
   getch(); // pause
 }
@@ -196,8 +196,8 @@ void setReg(){
     error(OOB);
     return;
   }
-  printw("Enter value for register (currently %04x) (hex): ",
-  (int)(regFile[reg] & WORD_MSK));
+  printw("Enter value for register %d (currently %04X) (hex): ",
+  reg, (int)(regFile[reg] & WORD_MSK));
   if(scanw("%x ",&value) == EOF){
     error(INPUT);
     return;
@@ -243,13 +243,13 @@ void printMem(){
     // print hex
     for(int j = 0; j < MEM_PRINT_WIDTH && ((start + i + j) < BYTEMAXMEM);
     j++){
-      printw("%02x ",memory.byte_mem[start + i + j]);
+      printw("%02X ",memory.byte_mem[start + i + j]);
     }
     // print ascii
     for(int j = 0; j < MEM_PRINT_WIDTH && ((start + i + j) < BYTEMAXMEM);
     j++){
       char out = memory.byte_mem[start + i + j];
-      if(out < ' ' || out > '~')
+      if(out < ' ' || out > '~') // ctrl character
         out = '.';
       printw("%c",out);
     }
@@ -260,7 +260,7 @@ void printMem(){
 
 void printPSW(){
   clear();
-  printw("Current PSW: %04x", (int)(memory.word_mem[PSW>>1]));
+  printw("Current PSW: %04x", (int)PSW->word);
   getch();
 }
 
