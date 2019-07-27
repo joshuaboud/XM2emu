@@ -8,3 +8,4 @@ partial fulfillment of the course requirements. This software is released under 
 ### Dependencies
 * ncurses
 * gcc
+* [XM2 assembler](github.com/joshuaboud/XM2ass) for assembling executables
