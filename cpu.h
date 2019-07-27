@@ -9,6 +9,10 @@
 
 #define RTN_FROM_ITR 0xFFFF
 
+#define MEM_ACC_CLK 2
+
+#define PC_INCR 2
+
 // for decode:
 #define BIT15 1<<15
 #define BIT14 1<<14
@@ -17,6 +21,8 @@
 #define BIT11 1<<11
 #define BIT10 1<<10
 
+#define REGCONST 2
+enum {REG = 0, CONST};
 
 typedef enum {FALSE = 0, TRUE} bool;
 typedef enum {FETCH, DECODE, EXECUTE} FDE_STATE;
@@ -24,11 +30,12 @@ typedef enum {NORMAL, CEX} CPU_MODE;
 typedef enum {cexF,cexT} CEX_TF;
 
 extern int BRKPT;
-extern unsigned short regFile[NUM_REG];
+extern unsigned short regFile[NUM_REG][REGCONST]; // registers and constants
 extern unsigned short IR; // instruction register
 extern unsigned short MAR; // memory address register
 extern unsigned short MBR; // memory buffer register
 extern int clock;
+extern int step;
 
 void (*function)(void); // global function pointer for execute
 

@@ -74,7 +74,7 @@ int loader(FILE * fptr){
       strncpy(memBuff,recBuff,MEM_LOC_LEN);
       recBuff += MEM_LOC_LEN;
       sscanf(memBuff,"%x",&memLoc);
-      regFile[PC] = (unsigned short)(memLoc & WORD_MSK);
+      regFile[PC][REG] = (unsigned short)(memLoc & WORD_MSK);
       break;
     default:
       return LOADER_FAIL;

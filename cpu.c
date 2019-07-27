@@ -5,7 +5,14 @@
 #include <stdlib.h>
 #include <signal.h> /* Signal handling software */
 
-unsigned short regFile[NUM_REG] = {0};
+unsigned short regFile[NUM_REG][REGCONST] = {0,0,
+                                             0,1,
+                                             0,2,
+                                             0,4,
+                                             0,8,
+                                             0,16,
+                                             0,32,
+                                             0,-1};
 
 unsigned short IR = 0; // instruction register
 unsigned short MAR = 0; // memory address register
@@ -23,6 +30,8 @@ CEX_TF cexTF;
 
 int clock = 0;
 
+int step = FALSE;
+
 void sigint_hdlr()
 {
 	/*
@@ -35,12 +44,14 @@ void sigint_hdlr()
 }
 
 void FDE(){
+  curs_set(0); // cursor is annoying during step, this makes it invisible
   initXM2();
   signal(SIGINT, sigint_hdlr);
-  while(!killed && ((int)regFile[PC] & WORD_MSK) != BRKPT){
+  while(!killed && ((int)regFile[PC][REG] & WORD_MSK) != BRKPT){
     updateScreen();
     switch(fdeState){
     case FETCH:
+      if(step) getch(); // step execution
       fetch();
       break;
     case DECODE:
@@ -51,6 +62,7 @@ void FDE(){
       break;
     }
   }
+  curs_set(1);
 }
 
 void initXM2(){
@@ -63,23 +75,30 @@ void initXM2(){
 }
 
 void updateScreen(){
+  int rows, cols;
+  getmaxyx(stdscr,rows,cols);
   clear();
-  printw("Running. # of clock cycles: %d",clock);
+  printw("Running. # of clock cycles: %d\n",clock);
+  printw("\nBlinkenlights:\n");
+  for(int i = 0; i < NUM_REG; i++){
+    printw("R%d: %04X\n", i, regFile[i][REG]);
+  }
+  printw("\nPSW: %04X",PSW->word);
   refresh();
 }
 
 void pull(unsigned short * bucket){
-  regFile[SP] += 2;
-  *bucket = memory.word_mem[regFile[SP]>>1];
-  if(regFile[SP] < VECTORBASE)
-    clock += 2;
+  regFile[SP][REG] += 2;
+  *bucket = memory.word_mem[regFile[SP][REG]>>1];
+  if(regFile[SP][REG] < VECTORBASE)
+    clock += MEM_ACC_CLK;
 }
 
 void push(unsigned short bucket){
-  memory.word_mem[regFile[SP]>>1] = bucket;
-  if(regFile[SP] < VECTORBASE)
+  memory.word_mem[regFile[SP][REG]>>1] = bucket;
+  if(regFile[SP][REG] < VECTORBASE)
     clock += 2;
-  regFile[SP] -= 2;
+  regFile[SP][REG] -= MEM_ACC_CLK;
 }
 
 void interrupt(int vec_num){
@@ -87,11 +106,11 @@ void interrupt(int vec_num){
     // priority not high enough, return
     return;
   }
-  push(regFile[PC]);
-  push(regFile[LR]);
+  push(regFile[PC][REG]);
+  push(regFile[LR][REG]);
   push(PSW->word);
   // update PC to vector address
-  regFile[PC] = vectorTbl[vec_num].ADDR;
+  regFile[PC][REG] = vectorTbl[vec_num].ADDR;
   // store prev priority
   int prev_prio = PSW->psw.CURR_PRIO;
   // update PSW to vector PSW
@@ -100,17 +119,17 @@ void interrupt(int vec_num){
   PSW->psw.PREV_PRIO = prev_prio;
   PSW->psw.SLP = 0;
   // LR = 0xFFFF
-  regFile[LR] = RTN_FROM_ITR;
+  regFile[LR][REG] = RTN_FROM_ITR;
 }
 
 void fetch(){
   clock++;
-  if(regFile[PC] %2 != 0){ // PC is odd
-    if(regFile[PC] == RTN_FROM_ITR){
+  if(regFile[PC][REG] %2 != 0){ // PC is odd
+    if(regFile[PC][REG] == RTN_FROM_ITR){
       // return from interrupt
       pull(&PSW->word);
-      pull(&regFile[LR]);
-      pull(&regFile[PC]);
+      pull(&regFile[LR][REG]);
+      pull(&regFile[PC][REG]);
     }else{
       // fault
       interrupt(INV_ADDR);
@@ -119,11 +138,11 @@ void fetch(){
     return;
   }
   
-  MAR = regFile[PC];
+  MAR = regFile[PC][REG];
   bus(MAR, &MBR, RD, W);
   IR = MBR;
   
-  regFile[PC] += 2;
+  regFile[PC][REG] += PC_INCR;
   
   if(cpuMode == CEX){
     if(CEX_T_CNT > 0){

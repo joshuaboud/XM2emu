@@ -55,9 +55,13 @@ void debuggerMenu(){
     case 'p':
       printPSW();
       break;
+    case 'E':
+    case 'e':
+      step = TRUE;
     case 'G':
     case 'g':
       FDE(); // calls FDE() in cpu.c
+      step = FALSE;
       break;
     case 'Q':
     case 'q':
@@ -72,7 +76,7 @@ void debuggerMenu(){
 void printMenu(){
   clear();
   printw("XM2 Emulator 0.1 Josh Boudreau 2019\n");
-  printw("PC = %04X\n",regFile[PC]);
+  printw("PC = %04X\n",regFile[PC][REG]);
   printw("# of clock cycles: %d\n",clock);
   (BRKPT != NEVER)? printw("Current breakpoint: %04X\n",BRKPT) : addch('\n');
   printw("C - Change memory location\n"
@@ -84,9 +88,10 @@ void printMenu(){
          "M - Print Memory Contents at Specified Location(s)\n"
          "P - Print Program Status Word\n"
          "G - Go (start execution)\n"
+         "E - Go (step)\n"
          "Q - Quit\n\n"
          "Choice: ");
-  refresh();
+  //refresh();
 }
 
 void changeMemory(){
@@ -180,7 +185,7 @@ void load(){
 void printRegFile(){
   clear();
   for(int i = 0; i < NUM_REG; i++){
-    printw("\nR%d: %04X", i, (int)regFile[i]);
+    printw("\nR%d: %04X", i, (int)regFile[i][REG]);
   }
   getch(); // pause
 }
@@ -197,17 +202,17 @@ void setReg(){
     return;
   }
   printw("Enter value for register %d (currently %04X) (hex): ",
-  reg, (int)(regFile[reg] & WORD_MSK));
+  reg, (int)(regFile[reg][REG] & WORD_MSK));
   if(scanw("%x ",&value) == EOF){
     error(INPUT);
     return;
   }
-  regFile[reg] = (unsigned short)(value & WORD_MSK);
+  regFile[reg][REG] = (unsigned short)(value & WORD_MSK);
   return;
 }
 
 void reset(){
-  regFile[PC] = memory.word_mem[RESET_PC>>1];
+  regFile[PC][REG] = memory.word_mem[RESET_PC>>1];
   clock = 0;
 }
 
@@ -239,7 +244,10 @@ void printMem(){
     return;
   }
   clear(); // clear screen
+  printw("      +0 +1 +2 +3 +4 +5 +6 +7 +8 +9 +A +B +C +D +E +F\n");
+  printw("-----------------------------------------------------\n");
   for(int i = 0; i < (end - start); i += MEM_PRINT_WIDTH){
+    printw("%04X: ", start + i);
     // print hex
     for(int j = 0; j < MEM_PRINT_WIDTH && ((start + i + j) < BYTEMAXMEM);
     j++){
