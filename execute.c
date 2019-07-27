@@ -2,6 +2,47 @@
 #include "cpu.h"
 #include "memory.h"
 
+unsigned carry[2][2][2] = {0, 0, 1, 0, 1, 0, 1, 1};
+unsigned overflow[2][2][2] = {0, 1, 0, 0, 0, 0, 1, 0};
+
+void updatePSWarith(unsigned short src, unsigned short dst,
+                    unsigned short res, int WB){
+  unsigned short mss, msd, msr; /* Most significant src, dst, and res bits */
+  if (WB == WORD){
+  mss = src & BIT15;
+  msd = dst & BIT15;
+  msr = res & BIT15;
+  }
+  else /* Byte */
+  {
+  mss = src & BIT7;
+  msd = dst & BIT7;
+  msr = res & BIT7;
+  res &= BYTE_MSK; /* Mask high byte for 'z' check */
+  }
+  /* Carry */
+  PSW->psw.C = carry[mss][msd][msr];
+  /* Zero */
+  PSW->psw.Z = (res == 0);
+  /* Negative */
+  PSW->psw.N = (msr == 1);
+  /* oVerflow */
+  PSW->psw.V = overflow[mss][msd][msr];
+}
+
+void updatePSWbit(unsigned short res, int WB){
+  switch(WB){
+  case WORD:
+    PSW->psw.N = (res & BIT15 != 0); // negative word
+    PSW->psw.Z = (res == 0); // result is zero
+    break;
+  case BYTE:
+    PSW->psw.N = (res & BIT7 != 0); // negative byte
+    PSW->psw.Z = ((res & BYTE_MSK) == 0); // result is zero
+    break;
+  }
+}
+
 void relMem(){
   union relMemOpCode *opcode = (union relMemOpCode *)&IR;
   MAR = (unsigned short)opcode->bf.relOff; // start with offset
@@ -144,18 +185,18 @@ void mem(){
   switch(opcode->bf.WB){
   case WORD:
     if(opcode->bf.DEC){
-      offset -= 2;
+      offset -= WORD_MEM_WIDTH;
     }
     if(opcode->bf.INC){
-      offset += 2;
+      offset += WORD_MEM_WIDTH;
     }
     break;
   case BYTE:
     if(opcode->bf.DEC){
-      offset -= 1;
+      offset -= BYTE_MEM_WIDTH;
     }
     if(opcode->bf.INC){
-      offset += 1;
+      offset += BYTE_MEM_WIDTH;
     }
     break;
   }
@@ -191,17 +232,187 @@ void mem(){
 }
 
 void shifting(){
-  
+  union shiftOpCode *opcode = (union shiftOpCode *)&IR;
+  switch(opcode->bf.operation){
+  case SWAP:
+  {
+    unsigned short temp = regFile[opcode->bf.S][REG];
+    regFile[opcode->bf.S][REG] = regFile[opcode->bf.D][REG];
+    regFile[opcode->bf.D][REG] = temp;
+    break;
+  }
+  case SRA:
+  case RRC:
+    PSW->psw.C = (regFile[opcode->bf.D][REG] & BIT0);
+    switch(opcode->bf.WB){
+    case WORD:
+      regFile[opcode->bf.D][REG] >>= 1; // shift right
+      if(opcode->bf.operation == RRC)
+        regFile[opcode->bf.D][REG] |= (PSW->psw.C << 15); // set bit 15 to carry
+      break;
+    case BYTE:
+    {
+      unsigned char temp = (regFile[opcode->bf.D][REG] & BYTE_MSK);
+      temp >>= 1; // shift right;
+      regFile[opcode->bf.D][REG] &= ~BYTE_MSK; // clear low byte
+      regFile[opcode->bf.D][REG] |= temp; // fill in byte
+      if(opcode->bf.operation == RRC)
+        regFile[opcode->bf.D][REG] |= (PSW->psw.C << 7); // set bit 7 to carry
+      break;
+    }
+    }
+    break;
+  case SWPB:
+  {
+    unsigned char temp = (regFile[opcode->bf.D][REG] & BYTE_MSK); // save LSB
+    regFile[opcode->bf.D][REG] &= ~BYTE_MSK; // clear low byte
+    // fill LSB
+    regFile[opcode->bf.D][REG] |= regFile[opcode->bf.D][REG] >> BYTE_SZ;
+    regFile[opcode->bf.D][REG] &= BYTE_MSK; // clear high byte
+    regFile[opcode->bf.D][REG] |= (temp << BYTE_SZ); // fill MSB
+    break;
+  }
+  case SXT:
+    if(regFile[opcode->bf.D][REG] & BIT7){ // negative
+      regFile[opcode->bf.D][REG] |= ~BYTE_MSK; // extend sign with 1
+    }else{
+      regFile[opcode->bf.D][REG] &= BYTE_MSK; // extend sign with 0
+    }
+    break;
+  default:
+    // illegal instruction fault
+    interrupt(ILL_INST);
+    return;
+  }
+  updatePSWbit(regFile[opcode->bf.D][REG], opcode->bf.WB);
 }
 
 void bitOp(){
-  
+  union bitOpOpCode *opcode = (union bitOpOpCode *)&IR;
+  unsigned short srcValue = regFile[opcode->bf.S][opcode->bf.RC];
+  unsigned short res;
+  if(opcode->bf.WB == BYTE) srcValue &= BYTE_MSK; // mask to byte if .B
+  switch(opcode->bf.operation){
+  case BIT:
+    res = (regFile[opcode->bf.D][REG] & srcValue);
+    break;
+  case BIC:
+    res = (regFile[opcode->bf.D][REG] & ~srcValue);
+    regFile[opcode->bf.D][REG] = res;
+    break;
+  case BIS:
+    res = (regFile[opcode->bf.D][REG] | srcValue);
+    regFile[opcode->bf.D][REG] = res;
+    break;
+  case MOV:
+    regFile[opcode->bf.D][REG] = srcValue; // DST = SRC
+    return;
+  }
+  updatePSWbit(res, opcode->bf.WB);
 }
 
 void ALUtest(){
-  
+  union ALUtestOpCode *opcode = (union ALUtestOpCode *)&IR;
+  unsigned short srcValue = regFile[opcode->bf.S][opcode->bf.RC];
+  unsigned short res = regFile[opcode->bf.D][REG]; // grab dest value
+  if(opcode->bf.WB == BYTE){
+    srcValue &= BYTE_MSK;
+    res &= BYTE_MSK;
+  }
+  switch(opcode->bf.operation){
+  case DADD:
+  {
+    unsigned carry = 0;
+    unsigned short sum;
+    bcd_add(NIBBLE(srcValue,0),NIBBLE(res,0), &sum, &carry);
+    res &= ~NIBBLE_MSK; // clear nibble 0
+    res |= (sum & NIBBLE_MSK); // fill nibble 0
+    bcd_add(NIBBLE(srcValue,1),NIBBLE(res,1), &sum, &carry);
+    res &= ~(NIBBLE_MSK << NIBBLE_SZ); // clear nibble 1
+    res |= ((sum & NIBBLE_MSK) << NIBBLE_SZ); // fill nibble 1
+    // save low byte of result:
+    regFile[opcode->bf.D][REG] &= ~BYTE_MSK; // clear LSB
+    regFile[opcode->bf.D][REG] |= (res & BYTE_MSK); // fill LSB
+    if(opcode->bf.WB == BYTE){
+      PSW->psw.C = carry;
+      return;
+    } // word -> keep going
+    bcd_add(NIBBLE(srcValue,2),NIBBLE(res,2), &sum, &carry);
+    res &= ~(NIBBLE_MSK << (NIBBLE_SZ * 2)); // clear nibble 2
+    res |= ((sum & NIBBLE_MSK) << (NIBBLE_SZ * 2)); // fill nibble 2
+    bcd_add(NIBBLE(srcValue,3),NIBBLE(res,3), &sum, &carry);
+    res &= ~(NIBBLE_MSK << (NIBBLE_SZ * 3)); // clear nibble 3
+    res |= ((sum & NIBBLE_MSK) << (NIBBLE_SZ * 3)); // fill nibble 3
+    // save high byte of result:
+    regFile[opcode->bf.D][REG] &= BYTE_MSK; // clear MSB
+    regFile[opcode->bf.D][REG] |= (res & ~BYTE_MSK); // fill LSB
+    PSW->psw.C = carry;
+    return;
+  }
+  case CMP:
+    res -= srcValue; // res = dst - src
+    updatePSWarith(srcValue, regFile[opcode->bf.D][REG], res, opcode->bf.WB);
+    return;
+  case XOR:
+    res ^= srcValue;
+    updatePSWbit(res, opcode->bf.WB);
+    break;
+  case AND:
+    res &= srcValue;
+    updatePSWbit(res, opcode->bf.WB);
+    break;
+  }
+  switch(opcode->bf.WB){
+  case WORD:
+    regFile[opcode->bf.D][REG] = res;
+    break;
+  case BYTE:
+    regFile[opcode->bf.D][REG] &= ~BYTE_MSK; // clear LSB
+    regFile[opcode->bf.D][REG] |= (res & BYTE_MSK); // fill in byte
+    break;
+  }
+}
+
+void bcd_add(unsigned short src, unsigned short dst, unsigned short *sum, unsigned *carry){
+  // add them
+  *sum = src + dst + *carry;
+  if(*sum >= 10){
+    *sum -= 10;
+    *carry = 1;
+  }else{
+    *carry = 0;
+  }
 }
 
 void ALU(){
-  
+  union ALUopCode *opcode = (union ALUopCode *)&IR;
+  unsigned short srcValue = regFile[opcode->bf.S][opcode->bf.RC];
+  unsigned short dstValue = regFile[opcode->bf.D][REG];
+  unsigned short res;
+  if(opcode->bf.WB == BYTE){
+    srcValue &= BYTE_MSK;
+    dstValue &= BYTE_MSK;
+  }
+  if(opcode->bf.N == 0){
+    res = srcValue;
+  }else{ // negative
+    res = ~srcValue;
+  }
+  if(opcode->bf.C == 1){ // carry
+    res += PSW->psw.C; // add carry from PSW
+  }else if(opcode->bf.N == 1){
+    // carry = 0 AND negative
+    res += 1; // one's to two's compliment
+  }
+  res += dstValue; // calculate final result
+  updatePSWarith(srcValue, dstValue, res, opcode->bf.WB);
+  switch(opcode->bf.WB){
+  case WORD:
+    regFile[opcode->bf.D][REG] = res;
+    break;
+  case BYTE:
+    regFile[opcode->bf.D][REG] &= ~BYTE_MSK; // clear LSB
+    regFile[opcode->bf.D][REG] |= (res & BYTE_MSK); // fill LSB
+    break;
+  }
 }

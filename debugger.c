@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <ncurses.h>
 
-#define NUM_ERR 8
+#define NUM_ERR 9
 char *errors[NUM_ERR] = { "Input error!",
                           "Input out of bounds!",
                           "Input must be even!",
@@ -14,7 +14,8 @@ char *errors[NUM_ERR] = { "Input error!",
                           "Loader error!",
                           "Invalid option!",
                           "Start must come before end!",
-                          "Chekcsum error!" };
+                          "Chekcsum error!",
+                          "Memory out of bounds!" };
 
 void debuggerMenu(){
   char ch;
@@ -212,6 +213,9 @@ void setReg(){
 }
 
 void reset(){
+  for(int i = 0; i < NUM_REG; i++){
+    regFile[i][REG] = 0;
+  }
   regFile[PC][REG] = memory.word_mem[RESET_PC>>1];
   clock = 0;
 }

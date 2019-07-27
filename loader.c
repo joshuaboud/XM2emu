@@ -51,8 +51,10 @@ int loader(FILE * fptr){
         recBuff += BYTE_STR_LEN;
         byteCnt--;
         sscanf(byteBuff,"%x",&byte);
-        if(memLoc > 0xFFFF)
+        if(memLoc > 0xFFFF || memLoc < 0){
+          error(MEM_OOB);
           return LOADER_FAIL;
+        }
         memory.byte_mem[memLoc++] = (unsigned char)byte;
         chksum += (char)byte;
       }

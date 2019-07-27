@@ -1,7 +1,18 @@
 #ifndef EXECUTE_H
 #define EXECUTE_H
 
+#define NIBBLE_MSK 0x0F
+#define NIBBLE(X,Y) (((X)>>(Y)) & NIBBLE_MSK)
+#define NIBBLE_SZ 4
+
 enum { WORD = 0, BYTE };
+
+void updatePSWarith(unsigned short src, unsigned short dst,
+                  unsigned short res, int WB);
+// update PSW bits for arithmetic instructions
+
+void updatePSWbit(unsigned short res, int WB);
+// update PSW bits for shifting and bitwise instructions
 
 struct relMem_bf{
   unsigned D : 3;
@@ -97,9 +108,9 @@ union ctrlOpCode{
   struct CEX_bf cex_bf;
 };
 
-enum {SVC, CEX};
+enum {SVC = 0, CEX};
 
-enum {EQ, NE, CS, CC, MI, PL, VS, VC, HI, LS, GE, LT, GT, LE, AL}; // cex
+enum {EQ, NE, CS, CC, MI, PL, VS, VC, HI, LS, GE, LT, GT, LE, AL}; // cex C
 
 void control(void);
 // executes CEX and SVC
@@ -123,18 +134,96 @@ union memOpCode{
   struct mem_bf bf;
 };
 
-enum {LD, ST};
+enum {LD = 0, ST};
 enum {POST = 0, PRE};
+
+#define WORD_MEM_WIDTH 2
+#define BYTE_MEM_WIDTH 1
 
 void mem(void);
 // executes LD and ST
 
+struct shift_bf{
+  unsigned D : 3;
+  unsigned S : 3;
+  unsigned WB : 1;
+  unsigned operation : 3;
+  unsigned : 6;
+};
+
+union shiftOpCode{
+  unsigned short word;
+  struct shift_bf bf;
+};
+
+// operation
+#define SWAP  0b000
+#define SRA   0b010
+#define RRC   0b100
+#define SWPB  0b110
+#define SXT   0b111
+
 void shifting(void);
+// executes SWAP, SRA, RRC, SWPB, SXT
+
+struct bitOp_bf{
+  unsigned D : 3;
+  unsigned S : 3;
+  unsigned WB : 1;
+  unsigned RC : 1;
+  unsigned operation : 2;
+  unsigned : 6;
+};
+
+union bitOpOpCode{
+  unsigned short word;
+  struct bitOp_bf bf;
+};
+
+enum {BIT = 0, BIC, BIS, MOV};
 
 void bitOp(void);
+// executes BIT, BIC, BIS, MOV
+
+struct ALUtest_bf{
+  unsigned D : 3;
+  unsigned S : 3;
+  unsigned WB : 1;
+  unsigned RC : 1;
+  unsigned operation : 2;
+  unsigned : 6;
+};
+
+union ALUtestOpCode{
+  unsigned short word;
+  struct ALUtest_bf bf;
+};
+
+enum {DADD = 0, CMP, XOR, AND};
 
 void ALUtest(void);
+// executes DADD, CMP, XOR, AND
+
+void bcd_add(unsigned short src, unsigned short dst,
+             unsigned short *sum, unsigned *carry);
+// adds src and dst as BCD, returns in dst, returns carry in carry
+
+struct ALU_bf{
+  unsigned D : 3;
+  unsigned S : 3;
+  unsigned WB : 1;
+  unsigned RC : 1;
+  unsigned C : 1; // whether or not to add carry
+  unsigned N : 1; // whether or not to add or subtract
+  unsigned : 6;
+};
+
+union ALUopCode{
+  unsigned short word;
+  struct ALU_bf bf;
+};
 
 void ALU(void);
+// executes ADD, ADDC, SUB, SUBC.
 
 #endif

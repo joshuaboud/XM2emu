@@ -4,7 +4,7 @@
 #define MEM_PRINT_WIDTH 16
 
 typedef enum { INPUT, OOB, EVEN, FDNE, LOADER, INV_OPT, ENDSTART,
-              CHKSUM } error_enum;
+              CHKSUM, MEM_OOB } error_enum;
 
 void debuggerMenu(void);
 // main control of debugger
