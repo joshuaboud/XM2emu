@@ -24,8 +24,8 @@ int BRKPT = NEVER; // default to run forever
 FDE_STATE fdeState;
 CPU_MODE cpuMode;
 
-int CEX_T_CNT;
-int CEX_F_CNT;
+unsigned CEX_T_CNT;
+unsigned CEX_F_CNT;
 CEX_TF cexTF;
 
 int clock = 0;
@@ -70,13 +70,11 @@ void initXM2(){
   CEX_T_CNT = 0;
   CEX_F_CNT = 0;
   cexTF = cexT;
-  cpuMode = NORMAL;
+  cpuMode = NORMAL_MODE;
   killed = FALSE;
 }
 
 void updateScreen(){
-  int rows, cols;
-  getmaxyx(stdscr,rows,cols);
   clear();
   printw("Running. # of clock cycles: %d\n",clock);
   printw("\nBlinkenlights:\n");
@@ -144,7 +142,7 @@ void fetch(){
   
   regFile[PC][REG] += PC_INCR;
   
-  if(cpuMode == CEX){
+  if(cpuMode == CEX_MODE){
     if(CEX_T_CNT > 0){
       CEX_T_CNT--;
       if(cexTF == cexT){
@@ -159,7 +157,7 @@ void fetch(){
       }
     }else{
       // both are 0
-      cpuMode = NORMAL;
+      cpuMode = NORMAL_MODE;
       fdeState = DECODE;
       return;
     }

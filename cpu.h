@@ -26,8 +26,13 @@ enum {REG = 0, CONST};
 
 typedef enum {FALSE = 0, TRUE} bool;
 typedef enum {FETCH, DECODE, EXECUTE} FDE_STATE;
-typedef enum {NORMAL, CEX} CPU_MODE;
+typedef enum {NORMAL_MODE, CEX_MODE} CPU_MODE;
 typedef enum {cexF,cexT} CEX_TF;
+
+extern unsigned CEX_T_CNT;
+extern unsigned CEX_F_CNT;
+extern CEX_TF cexTF;
+extern CPU_MODE cpuMode;
 
 extern int BRKPT;
 extern unsigned short regFile[NUM_REG][REGCONST]; // registers and constants
@@ -50,6 +55,9 @@ void pull(unsigned short * bucket);
 
 void push(unsigned short bucket);
 // pushes to stack
+
+void interrupt(int vec_num);
+// changes execution to interrupt vector
 
 void updateScreen(void);
 // print clock cycles to screen while running
