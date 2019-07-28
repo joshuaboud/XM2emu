@@ -11,22 +11,24 @@
 #include "cpu.h"
 #include "memory.h"
 
+#include <ncurses.h>
+
 unsigned carry[2][2][2] = {0, 0, 1, 0, 1, 0, 1, 1};
 unsigned overflow[2][2][2] = {0, 1, 0, 0, 0, 0, 1, 0};
 
 void updatePSWarith(unsigned short src, unsigned short dst,
-                    unsigned short res, int WB){
+                    unsigned short res, unsigned WB){
   unsigned short mss, msd, msr; /* Most significant src, dst, and res bits */
   if (WB == WORD){
-  mss = (src & BIT15 != 0);
-  msd = (dst & BIT15 != 0);
-  msr = (res & BIT15 != 0);
+  mss = ((src & BIT15) != 0);
+  msd = ((dst & BIT15) != 0);
+  msr = ((res & BIT15) != 0);
   }
   else /* Byte */
   {
-  mss = (src & BIT7 != 0);
-  msd = (dst & BIT7 != 0);
-  msr = (res & BIT7 != 0);
+  mss = ((src & BIT7) != 0);
+  msd = ((dst & BIT7) != 0);
+  msr = ((res & BIT7) != 0);
   res &= BYTE_MSK; /* Mask high byte for 'z' check */
   }
   /* Carry */
@@ -42,14 +44,15 @@ void updatePSWarith(unsigned short src, unsigned short dst,
 void updatePSWbit(unsigned short res, int WB){
   switch(WB){
   case WORD:
-    PSW->psw.N = (res & BIT15 != 0); // negative word
+    PSW->psw.N = ((res & BIT15) != 0); // negative word
     PSW->psw.Z = (res == 0); // result is zero
     break;
   case BYTE:
-    PSW->psw.N = (res & BIT7 != 0); // negative byte
+    PSW->psw.N = ((res & BIT7) != 0); // negative byte
     PSW->psw.Z = ((res & BYTE_MSK) == 0); // result is zero
     break;
   }
+  PSW->psw.V = 0; // clear overflow
 }
 
 void relMem(){
@@ -96,19 +99,19 @@ void branching(){
 int braCond(unsigned cond){
   switch(cond){
   case BEQ: // 000
-    return (PSW->psw.Z); // zero set
+    return ((PSW->psw.Z) != 0); // zero set
   case BNE: // 001
-    return !(PSW->psw.Z); // zero clear
+    return ((PSW->psw.Z) == 0); // zero clear
   case BC:  // 010
-    return (PSW->psw.C); // carry set
+    return ((PSW->psw.C) != 0); // carry set
   case BNC: // 011
-    return !(PSW->psw.C); // carry clear
+    return ((PSW->psw.C) == 0); // carry clear
   case BN:  // 100
-    return (PSW->psw.N); // negative set
+    return ((PSW->psw.N) != 0); // negative set
   case BGE: // 101
-    return !(PSW->psw.N ^ PSW->psw.V); // PSW.N XOR PSW.V == 0
+    return ((PSW->psw.N ^ PSW->psw.V) == 0); // PSW.N XOR PSW.V == 0
   case BLT: // 110
-    return (PSW->psw.N ^ PSW->psw.V); // PSW.N XOR PSW.V == 1
+    return ((PSW->psw.N ^ PSW->psw.V) != 0); // PSW.N XOR PSW.V == 1
   case BRA: // 111
     return TRUE; // always branch
   }
@@ -360,7 +363,7 @@ void ALUtest(){
   }
   case CMP:
     res -= srcValue; // res = dst - src
-    updatePSWarith(srcValue, regFile[opcode->bf.D][REG], res, opcode->bf.WB);
+    updatePSWarith(~srcValue + 1, regFile[opcode->bf.D][REG], res, opcode->bf.WB);
     return;
   case XOR:
     res ^= srcValue;
@@ -412,18 +415,16 @@ void ALU(){
     srcValue &= BYTE_MSK;
     dstValue &= BYTE_MSK;
   }
-  if(opcode->bf.N == 0){
-    res = srcValue;
-  }else{ // negative
-    res = ~srcValue;
+  if(opcode->bf.N == 1){ // negative
+    srcValue = ~srcValue; // one's compliment for now
   }
   if(opcode->bf.C == 1){ // carry
-    res += PSW->psw.C; // add carry from PSW
+    srcValue += PSW->psw.C; // add carry from PSW
   }else if(opcode->bf.N == 1){
     // carry = 0 AND negative
-    res += 1; // one's to two's compliment
+    srcValue += 1; // one's to two's compliment
   }
-  res += dstValue; // calculate final result
+  res = dstValue + srcValue; // calculate final result
   updatePSWarith(srcValue, dstValue, res, opcode->bf.WB);
   switch(opcode->bf.WB){
   case WORD:

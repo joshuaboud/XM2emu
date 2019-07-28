@@ -17,7 +17,7 @@
 enum { WORD = 0, BYTE };
 
 void updatePSWarith(unsigned short src, unsigned short dst,
-                  unsigned short res, int WB);
+                  unsigned short res, unsigned WB);
 // update PSW bits for arithmetic instructions
 
 void updatePSWbit(unsigned short res, int WB);
