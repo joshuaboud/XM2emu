@@ -179,7 +179,6 @@ void fetch(){
 }
 
 void decode(){
-  addch('\n');
   clock++;
   if(IR & BIT15){
     // bit 15 set

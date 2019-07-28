@@ -354,7 +354,7 @@ void ALUtest(){
     res |= ((sum & NIBBLE_MSK) << (NIBBLE_SZ * 3)); // fill nibble 3
     // save high byte of result:
     regFile[opcode->bf.D][REG] &= BYTE_MSK; // clear MSB
-    regFile[opcode->bf.D][REG] |= (res & ~BYTE_MSK); // fill LSB
+    regFile[opcode->bf.D][REG] |= (res & ~BYTE_MSK); // fill MSB
     PSW->psw.C = carry;
     return;
   }
@@ -402,17 +402,6 @@ else
      /* No carry */
      *carry = 0;  
 }
-
-/*void bcd_add(unsigned short src, unsigned short dst, unsigned short *sum, unsigned *carry){
-  // add them
-  *sum = src + dst + *carry;
-  if(*sum >= 10){
-    *sum -= 10;
-    *carry = 1;
-  }else{
-    *carry = 0;
-  }
-}*/
 
 void ALU(){
   union ALUopCode *opcode = (union ALUopCode *)&IR;

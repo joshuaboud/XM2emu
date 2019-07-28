@@ -88,7 +88,7 @@ void debuggerMenu(){
 
 void printMenu(){
   clear();
-  printw("XM2 Emulator 0.1 Josh Boudreau 2019\n");
+  printw("XM2 Emulator v0.1 Josh Boudreau 2019\n");
   printw("PC = %04X\n",regFile[PC][REG]);
   printw("# of clock cycles: %d\n",clock);
   (BRKPT != NEVER)? printw("Current breakpoint: %04X\n",BRKPT) : addch('\n');
