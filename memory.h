@@ -1,3 +1,14 @@
+/* File name: memory.h
+ * Author: Josh Boudreau
+ * School: Dalhousie University
+ * Course: ECED 3403 - Computer Architecture
+ * Purpose: Provide declarations of the machine's memory, a pointer to
+ * the PSW, a pointer to the vector table, and a bus function to
+ * interface the CPU with the memory. Useful memory-related macros and
+ * enums are also defined here.
+ * Last Modified: 2019-07-27
+ */
+
 #ifndef MEMORY_H
 #define MEMORY_H
 

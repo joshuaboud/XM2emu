@@ -1,3 +1,12 @@
+/* File name: execute.c
+ * Author: Josh Boudreau
+ * School: Dalhousie University
+ * Course: ECED 3403 - Computer Architecture
+ * Purpose: defitions of functions called by function pointer in
+ * execute() of cpu.c.
+ * Last Modified: 2019-07-27
+ */
+
 #include "execute.h"
 #include "cpu.h"
 #include "memory.h"
@@ -9,15 +18,15 @@ void updatePSWarith(unsigned short src, unsigned short dst,
                     unsigned short res, int WB){
   unsigned short mss, msd, msr; /* Most significant src, dst, and res bits */
   if (WB == WORD){
-  mss = src & BIT15;
-  msd = dst & BIT15;
-  msr = res & BIT15;
+  mss = (src & BIT15 != 0);
+  msd = (dst & BIT15 != 0);
+  msr = (res & BIT15 != 0);
   }
   else /* Byte */
   {
-  mss = src & BIT7;
-  msd = dst & BIT7;
-  msr = res & BIT7;
+  mss = (src & BIT7 != 0);
+  msd = (dst & BIT7 != 0);
+  msr = (res & BIT7 != 0);
   res &= BYTE_MSK; /* Mask high byte for 'z' check */
   }
   /* Carry */
@@ -322,12 +331,12 @@ void ALUtest(){
   switch(opcode->bf.operation){
   case DADD:
   {
-    unsigned carry = 0;
+    unsigned short carry = PSW->psw.C;
     unsigned short sum;
-    bcd_add(NIBBLE(srcValue,0),NIBBLE(res,0), &sum, &carry);
+    bcd_add(NIBBLE(srcValue,0),NIBBLE(res,0), carry, &sum, &carry);
     res &= ~NIBBLE_MSK; // clear nibble 0
     res |= (sum & NIBBLE_MSK); // fill nibble 0
-    bcd_add(NIBBLE(srcValue,1),NIBBLE(res,1), &sum, &carry);
+    bcd_add(NIBBLE(srcValue,1),NIBBLE(res,1),carry, &sum, &carry);
     res &= ~(NIBBLE_MSK << NIBBLE_SZ); // clear nibble 1
     res |= ((sum & NIBBLE_MSK) << NIBBLE_SZ); // fill nibble 1
     // save low byte of result:
@@ -337,10 +346,10 @@ void ALUtest(){
       PSW->psw.C = carry;
       return;
     } // word -> keep going
-    bcd_add(NIBBLE(srcValue,2),NIBBLE(res,2), &sum, &carry);
+    bcd_add(NIBBLE(srcValue,2),NIBBLE(res,2),carry, &sum, &carry);
     res &= ~(NIBBLE_MSK << (NIBBLE_SZ * 2)); // clear nibble 2
     res |= ((sum & NIBBLE_MSK) << (NIBBLE_SZ * 2)); // fill nibble 2
-    bcd_add(NIBBLE(srcValue,3),NIBBLE(res,3), &sum, &carry);
+    bcd_add(NIBBLE(srcValue,3),NIBBLE(res,3),carry, &sum, &carry);
     res &= ~(NIBBLE_MSK << (NIBBLE_SZ * 3)); // clear nibble 3
     res |= ((sum & NIBBLE_MSK) << (NIBBLE_SZ * 3)); // fill nibble 3
     // save high byte of result:
@@ -373,7 +382,28 @@ void ALUtest(){
   }
 }
 
-void bcd_add(unsigned short src, unsigned short dst, unsigned short *sum, unsigned *carry){
+int bcd_add(unsigned short sd, unsigned short dd, unsigned short c, 
+    unsigned short *sum, unsigned short *carry)
+{
+/*
+ - Binary Coded Decimal addition
+ - *sum = sd + dd + c
+ - if sum >= 10 -> 10s carry, otherwise no carry
+*/
+
+*sum = sd + dd + c;
+if (*sum >= 10)
+{
+     /* 10s carry */
+     *sum -= 10; /* Sum between 0 and 9 */
+     *carry = 1; /* Carry set */
+}
+else
+     /* No carry */
+     *carry = 0;  
+}
+
+/*void bcd_add(unsigned short src, unsigned short dst, unsigned short *sum, unsigned *carry){
   // add them
   *sum = src + dst + *carry;
   if(*sum >= 10){
@@ -382,7 +412,7 @@ void bcd_add(unsigned short src, unsigned short dst, unsigned short *sum, unsign
   }else{
     *carry = 0;
   }
-}
+}*/
 
 void ALU(){
   union ALUopCode *opcode = (union ALUopCode *)&IR;

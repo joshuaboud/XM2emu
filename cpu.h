@@ -1,3 +1,13 @@
+/* File name: cpu.h
+ * Author: Josh Boudreau
+ * School: Dalhousie University
+ * Course: ECED 3403 - Computer Architecture
+ * Purpose: Provide declarations of the machine's global registers (IR,
+ * MAR, MBR), CPU state variables, and declares the SIG_INT handler, 
+ * FDE cycle.
+ * Last Modified: 2019-07-27
+ */
+
 #ifndef CPU_H
 #define CPU_H
 

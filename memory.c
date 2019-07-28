@@ -1,3 +1,13 @@
+/* File name: memory.c
+ * Author: Josh Boudreau
+ * School: Dalhousie University
+ * Course: ECED 3403 - Computer Architecture
+ * Purpose: Provide definitions of the machine's memory, a pointer to
+ * the PSW, a pointer to the vector table, and a bus function to
+ * interface the CPU with the memory.
+ * Last Modified: 2019-07-27
+ */
+
 #include "memory.h"
 #include "cpu.h"
 

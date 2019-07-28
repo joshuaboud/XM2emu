@@ -1,3 +1,12 @@
+/* File name: loader.c
+ * Author: Josh Boudreau
+ * School: Dalhousie University
+ * Course: ECED 3403 - Computer Architecture
+ * Purpose: Prompt user for .xme file name, load contents into machine
+ * memory. Reports error if checksum fails.
+ * Last Modified: 2019-07-27
+ */
+
 #include "loader.h"
 #include "memory.h"
 #include "cpu.h"

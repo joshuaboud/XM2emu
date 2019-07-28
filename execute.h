@@ -1,8 +1,17 @@
+/* File name: execute.h
+ * Author: Josh Boudreau
+ * School: Dalhousie University
+ * Course: ECED 3403 - Computer Architecture
+ * Purpose: declarations of functions called by function pointer in
+ * execute() of cpu.c. All opcode unions are also defined here.
+ * Last Modified: 2019-07-27
+ */
+
 #ifndef EXECUTE_H
 #define EXECUTE_H
 
 #define NIBBLE_MSK 0x0F
-#define NIBBLE(X,Y) (((X)>>(Y)) & NIBBLE_MSK)
+#define NIBBLE(X,Y) (((X)>>((Y)*NIBBLE_SZ)) & NIBBLE_MSK)
 #define NIBBLE_SZ 4
 
 enum { WORD = 0, BYTE };
@@ -204,8 +213,10 @@ enum {DADD = 0, CMP, XOR, AND};
 void ALUtest(void);
 // executes DADD, CMP, XOR, AND
 
-void bcd_add(unsigned short src, unsigned short dst,
-             unsigned short *sum, unsigned *carry);
+int bcd_add(unsigned short sd, unsigned short dd, unsigned short c, 
+    unsigned short *sum, unsigned short *carry);
+//void bcd_add(unsigned short src, unsigned short dst,
+//             unsigned short *sum, unsigned *carry);
 // adds src and dst as BCD, returns in dst, returns carry in carry
 
 struct ALU_bf{

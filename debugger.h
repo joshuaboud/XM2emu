@@ -1,3 +1,12 @@
+/* File name: debugger.h
+ * Author: Josh Boudreau
+ * School: Dalhousie University
+ * Course: ECED 3403 - Computer Architecture
+ * Purpose: Provide a user interface for loading programs, starting 
+ * executing, and various debugging tools.
+ * Last Modified: 2019-07-27
+ */
+
 #ifndef DEBUGGER_H
 #define DEBUGGER_H
 
@@ -38,5 +47,8 @@ void printPSW(void);
 
 void error(error_enum e);
 // print error and pause
+
+void delAll(void);
+// erase all memory and register contents
 
 #endif

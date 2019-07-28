@@ -1,3 +1,12 @@
+/* File name: debugger.c
+ * Author: Josh Boudreau
+ * School: Dalhousie University
+ * Course: ECED 3403 - Computer Architecture
+ * Purpose: Provide a user interface for loading programs, starting 
+ * executing, and various debugging tools.
+ * Last Modified: 2019-07-27
+ */
+
 #include "debugger.h"
 #include "memory.h"
 #include "cpu.h"
@@ -64,6 +73,9 @@ void debuggerMenu(){
       FDE(); // calls FDE() in cpu.c
       step = FALSE;
       break;
+    case 'D':
+    case 'd':
+      delAll();
     case 'Q':
     case 'q':
       break;
@@ -80,13 +92,14 @@ void printMenu(){
   printw("PC = %04X\n",regFile[PC][REG]);
   printw("# of clock cycles: %d\n",clock);
   (BRKPT != NEVER)? printw("Current breakpoint: %04X\n",BRKPT) : addch('\n');
-  printw("C - Change memory location\n"
+  printw("L - Load XME file\n"
          "B - Set Breakpoint\n"
-         "L - Load XME file\n"
          "R - Print Register File\n"
          "S - Set Register Value\n"
-         "T - Reset Machine through Reset Vector\n"
          "M - Print Memory Contents at Specified Location(s)\n"
+         "C - Change memory location\n"
+         "T - Reset Machine through Reset Vector\n"
+         "D - Clear all memory contents and registers\n"
          "P - Print Program Status Word\n"
          "G - Go (start execution)\n"
          "E - Go (step)\n"
@@ -213,9 +226,6 @@ void setReg(){
 }
 
 void reset(){
-  for(int i = 0; i < NUM_REG; i++){
-    regFile[i][REG] = 0;
-  }
   regFile[PC][REG] = memory.word_mem[RESET_PC>>1];
   clock = 0;
 }
@@ -279,4 +289,23 @@ void printPSW(){
 void error(error_enum e){
   printw("\n%s",errors[e]);
   getch(); // pause
+}
+
+void delAll(){
+  clear();
+  printw("Erase all loaded memory and registers? [y/N]: ");
+  switch(getch()){
+  case 'Y':
+  case 'y':
+    for(int i = 0; i < WORDMAXMEM; i++){
+      memory.word_mem[i] = 0;
+    }
+    IR = MAR = MBR = 0;
+    for(int i = 0; i < NUM_REG; i++){
+      regFile[i][REG] = 0;
+    }
+    break;
+  default:
+    break;
+  }
 }
