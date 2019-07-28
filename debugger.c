@@ -23,7 +23,7 @@ char *errors[NUM_ERR] = { "Input error!",
                           "Loader error!",
                           "Invalid option!",
                           "Start must come before end!",
-                          "Chekcsum error!",
+                          "Checksum error!",
                           "Memory out of bounds!" };
 
 void debuggerMenu(){
