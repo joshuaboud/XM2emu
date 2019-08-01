@@ -76,7 +76,7 @@ void pull(unsigned short * bucket);
 void push(unsigned short bucket);
 // pushes to stack
 
-void interrupt(int vec_num);
+void exception(int vec_num);
 // changes execution to interrupt vector
 
 void updateScreen(void);

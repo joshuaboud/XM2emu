@@ -96,21 +96,28 @@ void updateScreen(){
 }
 
 void pull(unsigned short * bucket){
-  regFile[SP][REG] += 2;
-  *bucket = memory.word_mem[regFile[SP][REG]>>1];
+  regFile[SP][REG] += WORD_MEM_WIDTH;
+  MAR = regFile[SP][REG];
+  /**bucket = memory.word_mem[regFile[SP][REG]>>1];
   if(regFile[SP][REG] < VECTORBASE)
-    clock += MEM_ACC_CLK;
+    clock += MEM_ACC_CLK;*/
+  bus(MAR,&MBR,RD,W);
+  *bucket = MBR;
 }
 
 void push(unsigned short bucket){
-  memory.word_mem[regFile[SP][REG]>>1] = bucket;
+  /**memory.word_mem[regFile[SP][REG]>>1] = bucket;
   if(regFile[SP][REG] < VECTORBASE)
-    clock += 2;
-  regFile[SP][REG] -= MEM_ACC_CLK;
+    clock += 2;*/
+  MAR = regFile[SP][REG];
+  MBR = bucket;
+  bus(MAR,&MBR,WR,W);
+  regFile[SP][REG] -= WORD_MEM_WIDTH;
 }
 
-void interrupt(int vec_num){
-  if(vectorTbl[vec_num].PSW.psw.CURR_PRIO <= PSW->psw.CURR_PRIO){
+void exception(int vec_num){
+  if(vectorTbl[vec_num].PSW.psw.CURR_PRIO <= PSW->psw.CURR_PRIO && 
+    vec_num != RESET_VEC){ // always reset
     // priority not high enough, return
     return;
   }
@@ -140,7 +147,7 @@ void fetch(){
       pull(&regFile[PC][REG]);
     }else{
       // fault
-      interrupt(INV_ADDR);
+      exception(INV_ADDR);
     }
     fdeState = FETCH;
     return;

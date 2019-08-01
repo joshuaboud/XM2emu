@@ -25,6 +25,8 @@
 #define PSW_ADDR 0xFFFC
 #define RESET_PC 0xFFFE
 
+#define RESET_VEC 15
+
 union mem_ex{
   unsigned char byte_mem[BYTEMAXMEM];
   unsigned short word_mem[WORDMAXMEM];

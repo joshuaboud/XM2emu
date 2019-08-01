@@ -141,7 +141,7 @@ void control(){
   union ctrlOpCode *opcode = (union ctrlOpCode *)&IR;
   switch(opcode->bf.SVCCEX){
   case SVC:
-    interrupt(opcode->svc_bf.SA);
+    exception(opcode->svc_bf.SA);
     break;
   case CEX:
     cexTF = cexCond(opcode->cex_bf.C);
@@ -293,7 +293,7 @@ void shifting(){
     break;
   default:
     // illegal instruction fault
-    interrupt(ILL_INST);
+    exception(ILL_INST);
     return;
   }
   updatePSWbit(regFile[opcode->bf.D][REG], opcode->bf.WB);
