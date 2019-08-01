@@ -418,13 +418,13 @@ void ALU(){
   if(opcode->bf.N == 1){ // negative
     srcValue = ~srcValue; // one's compliment for now
   }
+  res = dstValue + srcValue; // calculate final result
   if(opcode->bf.C == 1){ // carry
-    srcValue += PSW->psw.C; // add carry from PSW
+    res += PSW->psw.C; // add carry from PSW
   }else if(opcode->bf.N == 1){
     // carry = 0 AND negative
-    srcValue += 1; // one's to two's compliment
+    res += 1; // one's to two's compliment
   }
-  res = dstValue + srcValue; // calculate final result
   updatePSWarith(srcValue, dstValue, res, opcode->bf.WB);
   switch(opcode->bf.WB){
   case WORD:
