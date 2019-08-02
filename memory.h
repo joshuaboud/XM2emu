@@ -33,14 +33,14 @@ union mem_ex{
 };
 
 struct psw_bf{
-  unsigned C : 1;
-  unsigned Z : 1;
-  unsigned N : 1;
-  unsigned SLP : 1;
-  unsigned V : 1;
-  unsigned CURR_PRIO : 3;
-  unsigned res : 5;
-  unsigned PREV_PRIO : 3;
+  unsigned short C : 1;
+  unsigned short Z : 1;
+  unsigned short N : 1;
+  unsigned short SLP : 1;
+  unsigned short V : 1;
+  unsigned short CURR_PRIO : 3;
+  unsigned short res : 5;
+  unsigned short PREV_PRIO : 3;
 };
 
 union psw_ex{

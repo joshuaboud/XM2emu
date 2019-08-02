@@ -115,9 +115,8 @@ void push(unsigned short bucket){
   regFile[SP][REG] -= WORD_MEM_WIDTH;
 }
 
-void exception(int vec_num){
-  if(vectorTbl[vec_num].PSW.psw.CURR_PRIO <= PSW->psw.CURR_PRIO && 
-    vec_num != RESET_VEC){ // always reset
+void exception(unsigned vec_num){
+  if(vectorTbl[vec_num].PSW.psw.CURR_PRIO <= PSW->psw.CURR_PRIO){
     // priority not high enough, return
     return;
   }
