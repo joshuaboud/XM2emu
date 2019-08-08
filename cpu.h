@@ -23,6 +23,9 @@
 
 #define PC_INCR 2
 
+#define SCRBUFF_SZ 65536
+#define BKSP 0x7F
+
 // for decode:
 #define BIT15 1<<15
 #define BIT14 1<<14
@@ -45,7 +48,7 @@
 enum {REG = 0, CONST};
 
 typedef enum {FALSE = 0, TRUE} bool;
-typedef enum {FETCH, DECODE, EXECUTE} FDE_STATE;
+typedef enum {FETCH, DECODE, EXECUTE, PROC_DEV, CHK_INTR} FDE_STATE;
 typedef enum {NORMAL_MODE, CEX_MODE} CPU_MODE;
 typedef enum {cexF,cexT} CEX_TF;
 
@@ -90,5 +93,11 @@ void decode(void);
 
 void execute(void);
 // execute instruction
+
+void procDevices(void);
+// process device input/outputs
+
+void checkInterrupts(void);
+// poll devices for interrupts
 
 #endif

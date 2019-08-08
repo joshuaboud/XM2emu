@@ -19,13 +19,17 @@
 
 #define BYTEMAXMEM (1<<16) /* 2^16 bytes */
 #define WORDMAXMEM (1<<15) /* 2^15 words (starting on even bytes) */
-#define DEVMEM 0x0010
 #define VECTORBASE 0xFFC0 /* Base address of vectors */
+#define DEV_MEM 0
+#define NUM_DEV 10
 
 #define PSW_ADDR 0xFFFC
 #define RESET_PC 0xFFFE
 
 #define RESET_VEC 15
+
+enum dev_num { TIMER = 0, KB, SCR };
+enum dev_io { OUT = 0, IN };
 
 union mem_ex{
   unsigned char byte_mem[BYTEMAXMEM];
@@ -48,7 +52,7 @@ union psw_ex{
   struct psw_bf psw;
 };
 
-extern union psw_ex * PSW;
+extern union psw_ex * PSW; // pointer to PSW
 
 enum { ILL_INST = 8, INV_ADDR, PRIO_FAULT };
 
@@ -57,9 +61,26 @@ struct vector{
   unsigned short ADDR;
 };
 
-extern struct vector *vectorTbl;
+extern struct vector *vectorTbl; // pointer to first interrupt vector
 
-extern union mem_ex memory;
+struct dev_bf{
+  unsigned short ie   : 1;
+  unsigned short io   : 1;
+  unsigned short dba  : 1;
+  unsigned short of   : 1;
+  unsigned short ena  : 1;
+  unsigned short      : 3;
+  unsigned short data : 8;
+};
+
+union dev{
+  unsigned short word;
+  struct dev_bf bf;
+};
+
+extern union dev *devices; // pointer to device memory
+
+extern union mem_ex memory; // main machine memory
 
 typedef enum { RD, WR } direction;
 typedef enum { W, B } wb;

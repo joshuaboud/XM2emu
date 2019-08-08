@@ -23,6 +23,9 @@ void updatePSWarith(unsigned short src, unsigned short dst,
 void updatePSWbit(unsigned short res, int WB);
 // update PSW bits for shifting and bitwise instructions
 
+void devMemAcc(unsigned short devNum, unsigned LDST);
+// clear DBA on load/store on input/output device 
+
 struct relMem_bf{
   unsigned D : 3;
   unsigned S : 3;

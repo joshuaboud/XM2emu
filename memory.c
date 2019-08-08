@@ -17,7 +17,10 @@ union mem_ex memory;
 union psw_ex *PSW = (union psw_ex *)&(memory.word_mem[PSW_ADDR >> 1]);
 
 // base pointer of vector table in memory:
-struct vector *vectorTbl = (struct vector *)&(memory.byte_mem[VECTORBASE]);
+struct vector *vectorTbl = (struct vector *)&(memory.word_mem[VECTORBASE>>1]);
+
+// base pointer of device memory
+union dev *devices = (union dev *)&(memory.word_mem[DEV_MEM]);
 
 void bus(unsigned short MAR, unsigned short *MBR, direction dir, wb size){
   switch(dir){

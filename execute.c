@@ -55,6 +55,16 @@ void updatePSWbit(unsigned short res, int WB){
   PSW->psw.V = 0; // clear overflow
 }
 
+void devMemAcc(unsigned short devNum, unsigned LDST){
+  if(devNum <= NUM_DEV){ // address is within device memory
+    if(devices[devNum].bf.ena && (
+    (devices[devNum].bf.io == IN && LDST == LD) || // input and read
+    (devices[devNum].bf.io == OUT && LDST == ST))){ // output and written
+      devices[devNum].bf.dba = 0; // clear DBA
+    }
+  }
+}
+
 void relMem(){
   union relMemOpCode *opcode = (union relMemOpCode *)&IR;
   MAR = (unsigned short)opcode->bf.relOff; // start with offset
@@ -73,6 +83,7 @@ void relMem(){
       regFile[opcode->bf.D][REG] |= MBR & BYTE_MSK; // fill in low byte
     }
   }
+  devMemAcc(MAR>>1, opcode->bf.LDST); // clear DBA of device mem if applicable
 }
 
 void branching(){
@@ -241,6 +252,7 @@ void mem(){
     if(opcode->bf.PRPO == POST) regFile[opcode->bf.D][REG] += offset;
     break;
   }
+  devMemAcc(MAR>>1, opcode->bf.LDST); // clear DBA of device mem if applicable
 }
 
 void shifting(){

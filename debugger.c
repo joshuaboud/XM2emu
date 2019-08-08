@@ -102,7 +102,7 @@ void printMenu(){
          "D - Clear all memory contents and registers\n"
          "P - Print Program Status Word\n"
          "G - Go (start execution)\n"
-         "E - Go (step)\n"
+         "E - Go (step execution, keyboard input disabled)\n"
          "Q - Quit\n\n"
          "Choice: ");
   //refresh();

@@ -14,6 +14,7 @@
 #include <ncurses.h>
 #include <stdlib.h>
 #include <signal.h> /* Signal handling software */
+#include <string.h>
 
 unsigned short regFile[NUM_REG][REGCONST] = {0,0,
                                              0,1,
@@ -42,6 +43,9 @@ int clock = 0;
 
 int step = FALSE;
 
+char scrBuff[SCRBUFF_SZ] = "";
+unsigned short scrItr = 0; // iterator for screen buffer
+
 void sigint_hdlr()
 {
 	/*
@@ -54,14 +58,15 @@ void sigint_hdlr()
 }
 
 void FDE(){
-  curs_set(0); // cursor is annoying during step, this makes it invisible
   initXM2();
   signal(SIGINT, sigint_hdlr);
+  // if step execution is true, getch() blocks, else getch() does not block
+  (step)? nodelay(stdscr,FALSE) : nodelay(stdscr,TRUE);
   while(!killed && ((int)regFile[PC][REG] & WORD_MSK) != BRKPT){
     updateScreen();
     switch(fdeState){
     case FETCH:
-      if(step) getch(); // step execution
+      if(step) getch(); // wait for keypress
       fetch();
       break;
     case DECODE:
@@ -70,9 +75,17 @@ void FDE(){
     case EXECUTE:
       execute();
       break;
+    case PROC_DEV:
+      procDevices();
+      break;
+    case CHK_INTR:
+      checkInterrupts();
+      break;
+    default:
+      break;
     }
   }
-  curs_set(1);
+  nodelay(stdscr,FALSE); // reset nodelay for getch()
 }
 
 void initXM2(){
@@ -92,23 +105,18 @@ void updateScreen(){
     printw("R%d: %04X\n", i, regFile[i][REG]);
   }
   printw("\nPSW: %04X",PSW->word);
+  printw("\n%s",scrBuff);
   refresh();
 }
 
 void pull(unsigned short * bucket){
   regFile[SP][REG] += WORD_MEM_WIDTH;
   MAR = regFile[SP][REG];
-  /**bucket = memory.word_mem[regFile[SP][REG]>>1];
-  if(regFile[SP][REG] < VECTORBASE)
-    clock += MEM_ACC_CLK;*/
   bus(MAR,&MBR,RD,W);
   *bucket = MBR;
 }
 
 void push(unsigned short bucket){
-  /**memory.word_mem[regFile[SP][REG]>>1] = bucket;
-  if(regFile[SP][REG] < VECTORBASE)
-    clock += 2;*/
   MAR = regFile[SP][REG];
   MBR = bucket;
   bus(MAR,&MBR,WR,W);
@@ -244,5 +252,42 @@ void decode(){
 void execute(){
   clock++;
   function(); // calls func ptr pointing to func in execute.c
+  fdeState = PROC_DEV;
+}
+
+void procDevices(){
+  fdeState = FETCH;
+  if(step) return; // disable devices if step
+  // check keyboard
+  if(devices[KB].bf.ena){
+    char input = getch();
+    if(input != ERR){
+      if(devices[KB].bf.dba == 1) devices[KB].bf.of = 1;
+      devices[KB].bf.data = (unsigned short)input;
+      devices[KB].bf.dba = 1;
+    }
+  }
+  // check screen
+  if(devices[SCR].bf.ena){
+    if(devices[SCR].bf.dba == 0){
+      if(devices[SCR].bf.data == BKSP){
+        scrItr--;
+        scrBuff[scrItr] = '\0';
+      }else{
+        scrBuff[scrItr] = devices[SCR].bf.data;
+        scrBuff[++scrItr] = '\0';
+      }
+      devices[SCR].bf.dba = 1; // data buffer available
+    }
+  }
+  fdeState = CHK_INTR;
+}
+
+void checkInterrupts(){
+  for(int i = 0; i < NUM_DEV; i++){
+    if(devices[i].bf.ie && devices[i].bf.ena && devices[i].bf.dba == 1){
+        exception(i); // cause interrupt
+    }
+  }
   fdeState = FETCH;
 }
