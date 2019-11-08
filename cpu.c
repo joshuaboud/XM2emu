@@ -85,7 +85,7 @@ void initXM2(){
 }
 
 void updateScreen(){
-  clear();
+  erase(); //clear();
   printw("Running. # of clock cycles: %d\n",clock);
   printw("\nBlinkenlights:\n");
   for(int i = 0; i < NUM_REG; i++){
